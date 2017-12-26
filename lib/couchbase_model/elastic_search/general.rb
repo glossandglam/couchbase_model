@@ -196,6 +196,17 @@ class CouchbaseModel
                   out = { missing: { field: n }}
                   out = { not: out } if vv
                   filters << out
+                when :distance
+                  next unless vv.is_a?(Hash)
+                  out = { geo_distance: { 
+                    distance: vv[:distance],
+                    n => {
+                      lat: vv[:lat] || vv[:latitude],
+                      lon: vv[:lon] || vv[:longitude]
+                    }
+                  }}
+                  out[:geo_distance][:distance_type] = vv[:type] if vv[:type]
+                  filters << out
                 end
               end
             elsif v.is_a? Array

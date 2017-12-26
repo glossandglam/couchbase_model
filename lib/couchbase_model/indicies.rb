@@ -11,7 +11,7 @@ class CouchbaseModel
       def lookup_attribute(attribute, v, full_model = false)
         value = CouchbaseModel::Indicies.index_value(v)
         begin
-          id = $couchbase.get indicies_index_key(attribute, value)
+          id = couchbase.get indicies_index_key(attribute, value)
           return id unless full_model
           id.is_a?(Array) ? id.map{|i| find(i)} : find(id)
         rescue
@@ -100,7 +100,7 @@ class CouchbaseModel
           if value
             begin
               self.class.couchbase.add(self.class.indicies_index_key(attribute, value), self.id, opts) unless value.nil?
-            rescue
+            rescue Exception => e
               return false
             end
           end
@@ -114,7 +114,7 @@ class CouchbaseModel
           next if value.nil?
           current = []
           begin 
-            current = $couchbase.get self.class.indicies_index_key(attribute, value)
+            current = self.class.couchbase.get self.class.indicies_index_key(attribute, value)
           rescue
           end
           current = [current] unless current.is_a?(Array)
