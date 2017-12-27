@@ -53,7 +53,7 @@ class CouchbaseModel
       def export_json_type(k, v, attrs, options)  
         return CouchbaseModel::Core::Json.couchsitter_object(k, v, attrs, options) if attrs[:class]
         return CouchbaseModel::Core::Json.date_object(v, attrs[:type]) if [:date, :datetime].include?(attrs[:type])     
-        val = self.send(k)
+        val = options[:multiple] ? v : self.send(k)
         if val.is_a?(CouchbaseModel)
           key = "#{val.class.name}:#{val.id}"
           options[:references][key] = val.as_json(options)
