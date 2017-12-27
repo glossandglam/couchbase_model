@@ -43,11 +43,7 @@ class CouchbaseModel
     end
   end
   
-  class << self
-    @@_init = nil
-    @@_cb = nil
-    @@_es_client = nil
-    
+  class << self    
     def init
       @@_init = CouchbaseModel::Init.new unless @@_init
       @@_init
@@ -59,8 +55,8 @@ class CouchbaseModel
     end
     
     def elasticsearch_client
-      Rails.logger.info init.elasticsearch.client
       @@_es_client = Elasticsearch::Client.new(init.elasticsearch.client) unless @@_es_client
+      Rails.logger.info @@_es_client.inspect
       @@_es_client
     end
     
