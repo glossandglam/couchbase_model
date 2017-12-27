@@ -59,6 +59,7 @@ class CouchbaseModel
     end
     
     def elasticsearch_client
+      Rails.logger.info init.elasticsearch.client
       @@_es_client = Elasticsearch::Client.new(init.elasticsearch.client) unless @@_es_client
       @@_es_client
     end
