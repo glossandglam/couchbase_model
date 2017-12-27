@@ -44,6 +44,10 @@ class CouchbaseModel
   end
   
   class << self    
+    @@_init = nil
+    @@_cb = nil
+    @@_es_client = nil
+    
     def init
       @@_init = CouchbaseModel::Init.new unless @@_init
       @@_init
