@@ -71,7 +71,7 @@ class CouchbaseModel
       end
       
       def load_many(ids, references = {})
-        missing = ids.select{|id| not references.key?(key(id)}
+        missing = ids.select{|id| not references.key?(key(id))}
         
         unless missing.empty?
           results = self.couchbase.get(missing.map{|id| key(id)}, format: :plain, quiet: true)
