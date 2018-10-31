@@ -84,7 +84,7 @@ class CouchbaseModel
             model = new
             model.id = missing[i]
             found[missing[i]] = _generate_couchsitter_model(model, results[i], references)
-          end unless results.is_a?(Array)
+          end if results.is_a?(Array)
         end
         
         ids.map{|id| found[id]}.select{|a| a}
