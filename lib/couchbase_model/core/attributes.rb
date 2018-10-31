@@ -1,6 +1,7 @@
 class CouchbaseModel
   module Core
     module Attributes
+    
       def self.included(base)
         base.extend(ClassMethods)
         base.include CouchbaseModel::Core::Encrypt
@@ -19,20 +20,61 @@ class CouchbaseModel
           @@_attributes[self.name] = {} unless @@_attributes.key? self.name
           unless @@_attributes[self.name].key?(attribute)
             @@_attributes[self.name][attribute] = options
-            
-            define_method(attribute) {|func_opts = {}| CouchbaseModel::Core::Attributes.get self, options || {}, attribute, func_opts } unless instance_methods.include?(attribute) && !CouchbaseModel.instance_methods.include?(attribute) 
-            define_method("#{attribute}=".to_sym) {|v, func_opts={}| CouchbaseModel::Core::Attributes.set self, options || {}, attribute, v, func_opts }
-            
-            define_method("#{attribute}_changed?".to_sym) { not self.data[attribute].eql?(self.original_value attribute) }
-            define_method("#{attribute}_original".to_sym) { self.original_value attribute}
-            if options[:multiple]
-              define_method("add_to_#{attribute}") {|item, func_opts={}| CouchbaseModel::Core::Attributes.add_to self, attribute, item, options[:multiple] != :list, func_opts }
-              define_method("remove_from_#{attribute}") {|item, func_opts={}| CouchbaseModel::Core::Attributes.remove_from self, attribute, item, func_opts }
-              define_method("clear_#{attribute}") { CouchbaseModel::Core::Attributes.clear self, attribute }
-              define_method("in_#{attribute}?") {|item, func_opts={}| CouchbaseModel::Core::Attributes.in self, attribute, item, func_opts }
+            defined_attribute_methods(attribute).each do |method, func|
+              self.send(func, method, attribute, options)
             end
           end
           @@_attributes[self.name][attribute]
+        end
+        
+        protected
+        
+        def defined_attribute_methods(attribute)
+          options = attributes(false)[attribute]
+          
+          {
+            attribute => :define_get_attribute,
+            :"#{attribute}=" => :define_set_attribute,
+            :"#{attribute}_changed?" => :define_changed_attribute,
+            :"#{attribute}_original" => :define_original_attribute
+          }.merge(options[:multiple] ? {
+            :"add_to_#{attribute}" => :define_add_to_attribute,
+            :"remove_from_#{attribute}" => :define_remove_from_attribute,
+            :"clear_#{attribute}" => :define_clear_attribute,
+            :"in_#{attribute}?" => :define_in_attribute
+          } : {}).select {|method, func| not instance_methods.include?(method) || CouchbaseModel.instance_methods.include?(method) }
+        end
+        
+        def define_get_attribute(method, attribute, options)
+          define_method(attribute) {|func_opts = {}| CouchbaseModel::Core::Attributes.get self, options || {}, attribute, func_opts } 
+        end
+        
+        def define_set_attribute(method, attribute, options)
+          define_method(method) {|v, func_opts={}| CouchbaseModel::Core::Attributes.set self, options || {}, attribute, v, func_opts }
+        end
+        
+        def define_changed_attribute(method, attribute, options)
+          define_method(method) { not self.data[attribute].eql?(self.original_value attribute) }
+        end
+        
+        def define_original_attribute(method, attribute, options)
+          define_method(method) { self.original_value attribute }
+        end
+        
+        def define_add_to_attribute(method, attribute, options)
+          define_method(method) {|item, func_opts={}| CouchbaseModel::Core::Attributes.add_to self, attribute, item, options[:multiple] != :list, func_opts }
+        end
+        
+        def define_remove_from_attribute(method, attribute, options)
+          define_method(method) {|item, func_opts={}| CouchbaseModel::Core::Attributes.remove_from self, attribute, item, func_opts }
+        end
+        
+        def define_clear_attribute(method, attribute, options)
+          define_method(method) { CouchbaseModel::Core::Attributes.clear self, attribute }
+        end
+        
+        def define_in_attribute(method, attribute, options)
+          define_method(method) {|item, func_opts={}| CouchbaseModel::Core::Attributes.in self, attribute, item, func_opts }
         end
       end
       
