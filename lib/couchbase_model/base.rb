@@ -17,8 +17,9 @@ class CouchbaseModel
       
       def exists?(id)
         begin
-          self.couchbase.add key(id), nil
-          self.couchbase.delete key(id)
+          k = key(id)
+          self.couchbase.add k, nil
+          self.couchbase.delete k
           false
         rescue
           true
@@ -61,6 +62,10 @@ class CouchbaseModel
         model
       end
       
+      # The internal "loading" functionality to load and generate a single
+      # model from the database
+      #
+      # @return [CouchbaseModel]
       def load(id, references = {})
         return references[key(id)] if references[key(id)]
         result = self.couchbase.get(key(id), format: :plain, quiet: true)
@@ -70,6 +75,11 @@ class CouchbaseModel
         _generate_couchsitter_model(model, result, references || {})
       end
       
+      # This function will load multiple ids and return an array
+      #
+      # It is used by the elasticsearch's "load" functionality to reduce the number of DB calls
+      #
+      # @return [Array]
       def load_many(ids, references = {})
         found, missing = {}, []
         
