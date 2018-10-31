@@ -63,35 +63,27 @@ class CouchbaseModel
       
       def load(id, references = {})
         return references[key(id)] if references[key(id)]
-        begin
-          result = self.couchbase.get(key(id), format: :plain)
-        rescue
-          return nil
-        end
-        return nil unless result && result.success?
+        result = self.couchbase.get(key(id), format: :plain, quiet: true)
+        return nil unless result
         model = new
         model.id = id
-        _generate_couchsitter_model(model, result.value, references)
+        _generate_couchsitter_model(model, result, references)
       end
       
       def load_many(ids, references = {})
         missing = ids.select{|id| not references.key?(key(id)}
         
         unless missing.empty?
-          begin
-            results = self.couchbase.get(missing.map{|id| key(id)}, format: :plain)
-          rescue
-            next
-          end
+          results = self.couchbase.get(missing.map{|id| key(id)}, format: :plain, quiet: true)
           next unless results.is_a?(Array)
           
           missing.each_index do |i|
             id = missing[i]
             res = results[i]
-            next unless res.success?
+            next unless res
             model = new
             model.id = id
-            references[key(id)] = _generate_couchsitter_model(model, res.value, references)
+            references[key(id)] = _generate_couchsitter_model(model, res, references)
           end
         end
         
