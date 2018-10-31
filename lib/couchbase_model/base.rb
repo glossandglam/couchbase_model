@@ -75,7 +75,6 @@ class CouchbaseModel
         
         unless missing.empty?
           results = self.couchbase.get(missing.map{|id| key(id)}, format: :plain, quiet: true)
-          next unless results.is_a?(Array)
           
           missing.each_index do |i|
             id = missing[i]
@@ -84,7 +83,7 @@ class CouchbaseModel
             model = new
             model.id = id
             references[key(id)] = _generate_couchsitter_model(model, res, references)
-          end
+          end unless results.is_a?(Array)
         end
         
         ids.map{|id| references[key(id)]}
