@@ -97,7 +97,7 @@ class CouchbaseModel
           end if results.is_a?(Array)
         end
         
-        ids.map{|id| found[id]}.select{|a| a}
+        ids.select{|id| found.key?(id)}.map{|id| found[id]}
       end
       
       def attribute_value_toload(model, k, value) 
