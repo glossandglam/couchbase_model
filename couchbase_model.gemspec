@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   
   s.add_runtime_dependency 'activesupport'
   
-  s.add_runtime_dependency 'couchbase'
+  s.add_runtime_dependency 'couchbase', '~> 2.0'
   s.add_runtime_dependency 'elasticsearch'
   
   s.add_runtime_dependency 'oj'

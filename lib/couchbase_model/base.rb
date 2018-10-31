@@ -64,14 +64,38 @@ class CouchbaseModel
       def load(id, references = {})
         return references[key(id)] if references[key(id)]
         begin
-          data = self.couchbase.get(key(id), format: :plain)
+          result = self.couchbase.get(key(id), format: :plain)
         rescue
           return nil
         end
-        return nil unless data
+        return nil unless result && result.success?
         model = new
         model.id = id
-        _generate_couchsitter_model(model, data, references)
+        _generate_couchsitter_model(model, result.value, references)
+      end
+      
+      def load_many(ids, references = {})
+        missing = ids.select{|id| not references.key?(key(id)}
+        
+        unless missing.empty?
+          begin
+            results = self.couchbase.get(missing.map{|id| key(id)}, format: :plain)
+          rescue
+            next
+          end
+          next unless results.is_a?(Array)
+          
+          missing.each_index do |i|
+            id = missing[i]
+            res = results[i]
+            next unless res.success?
+            model = new
+            model.id = id
+            references[key(id)] = _generate_couchsitter_model(model, res.value, references)
+          end
+        end
+        
+        ids.map{|id| references[key(id)]}
       end
       
       def attribute_value_toload(model, k, value) 
