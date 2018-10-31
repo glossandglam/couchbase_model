@@ -27,7 +27,7 @@ class CouchbaseModel
             query = { filtered: {query: query, filter: {bool: { must: CouchbaseModel::ElasticSearch::General.elasticsearch_filters(options[:where], es_attr)}}}}
           end
           
-          __search_with_query(query, options)
+          options[:count] ? __count_with_query(query) : __search_with_query(query, options)  
         end
         
         def search_by(attribute, value, options = {})
