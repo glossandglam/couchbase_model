@@ -67,26 +67,27 @@ class CouchbaseModel
         return nil unless result
         model = new
         model.id = id
-        _generate_couchsitter_model(model, result, references)
+        _generate_couchsitter_model(model, result, references || {})
       end
       
       def load_many(ids, references = {})
-        missing = ids.select{|id| not references.key?(key(id))}
+        found, missing = {}, []
+        
+        # This is basically splitting the ids into those it has found and those it is missing
+        ids.each {|id| k = key(id); references[k] ? (found[id] = references[k]) : (missing << id) }
         
         unless missing.empty?
           results = self.couchbase.get(missing.map{|id| key(id)}, format: :plain, quiet: true)
           
           missing.each_index do |i|
-            id = missing[i]
-            res = results[i]
-            next unless res
+            next unless results[i]
             model = new
-            model.id = id
-            references[key(id)] = _generate_couchsitter_model(model, res, references)
+            model.id = missing[i]
+            found[missing[i]] = _generate_couchsitter_model(model, results[i], references)
           end unless results.is_a?(Array)
         end
         
-        ids.map{|id| references[key(id)]}
+        ids.map{|id| found[id]}.select{|a| a}
       end
       
       def attribute_value_toload(model, k, value) 

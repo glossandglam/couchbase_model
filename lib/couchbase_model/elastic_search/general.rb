@@ -84,9 +84,9 @@ class CouchbaseModel
                                 type:  elastic_search[:type],
                                 body: body
           
-          out = results["hits"]["hits"].map{|item| options[:load] ? find(item["_id"]) : item["_id"]}
-          out.select!{|a| a} if options[:load] #Filter nils if loading
-          out
+          
+          ids = results["hits"]["hits"].map{|item| item["_id"]}
+          options[:load] ? load_many(ids) : ids
         end
         
         def elasticsearch_destroy_all(ids)
