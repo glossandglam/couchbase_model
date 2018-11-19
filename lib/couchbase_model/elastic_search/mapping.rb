@@ -9,6 +9,8 @@ class CouchbaseModel
         def update_mappings
           all_elasticsearch_models.each do |klass|
             options = klass.elastic_search
+            puts options.inspect
+            
             next unless options
             
             map = {}
@@ -19,10 +21,13 @@ class CouchbaseModel
               next unless attr[:elastic_search]
               
               map[name] = {}
-              map[name][:type] = opts[:type] || :string
-              map[name][:index] = opts[:index] || :not_analyzed if map[name][:type].to_sym == :string
-              map[name][:format] = opts[:format] if opts.key? :format
+              map[name][:type] = attr[:type] || :string
+              map[name][:index] = attr[:index] || :not_analyzed if map[name][:type].to_sym == :string
+              map[name][:format] = attr[:format] if attr.key? :format
             end
+            
+            puts options.inspect
+            puts map.inspect
             
             put_mapping options[:index], options[:type], map
           end
@@ -34,16 +39,17 @@ class CouchbaseModel
         # Sometimes, when there was a mistake made, we need to delete and rebuild the mapping.
         # You can use the index and type insertions to pinpoint the index and/or mapping you want
         # to remove
-        def delete_mappings(index = nil, type = nil)
-          CouchbaseModel.init.elasticsearch.indexes.each do |idx, index_options|
+        def delete_mappings(index = nil, type = nil)        
+          CouchbaseModel.init.elasticsearch.indexes.each do |idx, index_options|            
             next unless index.nil? || idx == index.to_sym
+            
             begin
               if type && idx == index.to_sym
                 CouchbaseModel.elasticsearch_client.indicies.delete_mapping index: index, type: type
                 return 
               end
               
-              CouchbaseModel.elasticsearch_client.indicies.delete indedx: index
+              CouchbaseModel.elasticsearch_client.indicies.delete index: idx
             rescue
             end
           end
@@ -56,7 +62,11 @@ class CouchbaseModel
             k = "#{cls.prefix}:id:"
             end_k = "#{cls.prefix}:ie"
             
-            list = every_single_document.each do |c|
+            list = every_single_document
+            
+            puts cls
+            puts list.count
+            list.each do |c|
               next unless c.id >= k && c.id <= end_k
               m = cls.new
               m.id = c.id[k.size, c.id.size - k.size]
@@ -77,7 +87,7 @@ class CouchbaseModel
         def put_mapping(index, type, map, inside = false)
           begin
             CouchbaseModel.elasticsearch_client.indices.put_mapping index: index, type: type, body: {
-              options[:type] => { properties: map }
+              map[:type] => { properties: map }
             }
           rescue
             return if inside
@@ -90,16 +100,19 @@ class CouchbaseModel
         def create_index(idx)
           indices = CouchbaseModel.init.elasticsearch.indexes
           return unless indices
-          index = indicies[idx]
+          index = indices[idx]
           return unless index
           settings = index[:settings]
           return unless settings
           
-          CouchbaseModel.elasticsearch_client.indices.create index: idx, body: { settings: settings }
+          begin
+            CouchbaseModel.elasticsearch_client.indices.create index: idx, body: { settings: settings }
+          rescue
+          end
         end
         
         def all_elasticsearch_models
-          CouchbaseModel.all_couchbase_models.select{|m| item.ancestors.include?(CouchbaseModel::ElasticSearch)}
+          CouchbaseModel.all_couchbase_models.select{|m| m.ancestors.include?(CouchbaseModel::ElasticSearch::General)}
         end
         
         # Get every single document in all of couchbase

@@ -57,8 +57,8 @@ class CouchbaseModel
         # Set the default values
         CouchbaseModel::Core::Attributes.set_default_values model.class, model.data
         
-        model._first_data = model.data.deep_dup
         invoke_action(:after_load, model)
+        model._first_data = model.data.deep_dup
         model
       end
       
@@ -169,7 +169,11 @@ class CouchbaseModel
     end
     
     def value_changed?(attribute)
-      not self.data[attribute].eql? @_firstdata[attribute]
+      not self.data[attribute].eql? self.original_value(attribute)
+    end
+    
+    def all_changed_attributes
+      (self.data.keys + @_firstdata.keys).uniq.select{|k| value_changed?(k)}
     end
     
     def _first_data=(data)

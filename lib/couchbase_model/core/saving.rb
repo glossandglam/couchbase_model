@@ -14,23 +14,36 @@ class CouchbaseModel
         end
       end
       
-      def save_only(attribute)
+      def save_only(attributes)
         updated_data = {}
-        (attribute.is_a?(Array) ? attribute : [ attribute ]).each {|attr| updated_data[attr] =  _only_changed_attribute(attr) }
+        
+        attributes = (attributes.is_a?(Array) ? attributes : [ attributes ])
+        attributes.each {|attr| updated_data[attr] =  _only_changed_attribute(attr) }
+        
+        # We need to save the other changes, so they are not undone by this "save only"
+        
+        other_changed_attributes = self.all_changed_attributes - attributes
+        other_changed_data = self.data.select{|k,v| other_changed_attributes.include?(k)}
+        
         return false unless (saved_data = perform_actual_save(0, updated_data))
         self.class._generate_couchsitter_model(self, saved_data)
+        
+        # Now, we'll update the other pieces of data we were updating before the save_only
+        other_changed_attributes.each do |attr|
+          other_changed_data.key?(attr) ? (self.data[attr] = other_changed_data[attr]) : self.data.delete(attr)
+        end
+        
         true
       end
       
       def save(options = {})
-        now = Time.now
-        
         unless options[:skip_filters]
           return false if !self.id && self.class.invoke_action(:before_create, self) === false
           return false if self.class.invoke_action(:before_save, self) === false
         end
         
-        return false unless (saved_data = perform_actual_save)
+        return false unless (saved_data = perform_actual_save)        
+        
         self.class.invoke_action(:after_save, self) unless options[:skip_filters]
         self.class._generate_couchsitter_model(self, saved_data)
         true
@@ -67,9 +80,10 @@ class CouchbaseModel
             generate_id_for_save!
             return self.class.couchbase.add(self.key, data, opts) ? data : false
           end
-        rescue
+        rescue Exception => e
           return perform_actual_save(tries + 1, changed_data) unless tries < TOTAL_SAVE_ATTEMPTS
         end
+        
         false
       end
       
@@ -111,11 +125,19 @@ class CouchbaseModel
       
       def _only_changed
         out, tmp = {}, data.dup
-        self.class.attributes(false).each do |n, attr|
-          if self.send "#{n}_changed?".to_sym
-            out[n] = _only_changed_attribute n, tmp
-          end
+        
+        # First, we'll properly update all the attributes
+        self.class.attributes.each do |n|
+          next unless self.value_changed?(n)
+          out[n] = _only_changed_attribute n, tmp
         end
+        
+        # And then we'll save all the calculations
+        self.class._calculated_fields.keys.each do |n|
+          next if self.data.key?(n) && !self.value_changed?(n)
+          out[n] = self.calculated_field_value n
+        end
+        
         out
       end
       

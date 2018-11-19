@@ -14,7 +14,9 @@ class CouchbaseModel
   include CouchbaseModel::Core::Json
   include CouchbaseModel::Core::Saving
   
-  include CouchbaseModel::Filters
+  include CouchbaseModel::Core::Filters
+  include CouchbaseModel::Core::Calculated
+  
   include CouchbaseModel::ElasticSearch::General
   include CouchbaseModel::Indicies
   
@@ -68,9 +70,11 @@ class CouchbaseModel
       Dir[Rails.root.join('app', 'models').to_s + "/**/*.rb"].each do |f|
         f.slice!(Rails.root.join('app', 'models').to_s + "/")
         f.slice!(".rb")
+        
         require f unless Module.const_defined?(f.camelize)
         model = Module.const_get(f.camelize) if Module.const_defined?(f.camelize)
-        next unless model.is_a?(CouchbaseModel)
+        next unless model
+        next unless model.ancestors.include?(CouchbaseModel)
         models << model
       end
       models

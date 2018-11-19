@@ -6,6 +6,17 @@ class CouchbaseModel
       end
       
       module ClassMethods
+        @@_custom_json_attributes = {}
+        
+        def json_attributes
+          @@_custom_json_attributes[self.name] = {} unless @@_custom_json_attributes[self.name]
+          @@_custom_json_attributes[self.name]
+        end
+        
+        def json_attribute(attribute, options = {}, &block)
+          attribute = attribute.to_sym
+          json_attributes[attribute] = { options: options || {}, method: options[:method] || block }
+        end
       end
       
       def to_json(options = {})
@@ -13,6 +24,15 @@ class CouchbaseModel
       end
       
       # Basic AS_JSON
+      #
+      # There are three types of attributes that this method will build for a CouchbaseModel
+      #
+      # 1. The regular saved CouchbaseModel attributes
+      # 2. The transient calculations for this appointment
+      # 2. Any defined JSON attributes
+      #
+      # It is important to note that while (1) and (2) will be cached as they normally would
+      # (whether from the first calculation or save), (3) will be freshly calculated every time
       def as_json(options = {})  
         #Setup the references
         has_refs = options[:references].is_a?(Hash)
@@ -21,23 +41,60 @@ class CouchbaseModel
         key = "#{self.class.name}:#{id}"
         return options[:references][key] if options[:references][key].is_a?(Hash)
         
-        options[:references][key] = true 
-        
         # For Couchbase models, use as_json
         publicize = options[:publicize].is_a?(Hash) ? options[:publicize] : {}
+        only_fields = CouchbaseModel::Core::Json.parse_json_only options[:only]
         
         export = {id: self.id}
-        # Filter out private items
-        self.class.attributes(false).select{|k, attrs| publicize[:_all] || publicize[k.to_sym] || !attrs[:private]}.each do |k,attrs|      
-          # Display if not private
-          export[k] = export_for_json k, data[k], attrs, options
+        
+        # Fiirst, let's compile the attributes
+        self.class.attributes(false).each do |k, attr|
+          next unless CouchbaseModel::Core::Json.include_field_in_json?(k.to_sym, attr, publicize, only_fields, options)
+          export[k] = export_for_json k, data[k], attr, (only_fields ? options.merge(only: only_fields[k]) : options)
         end
         
-        if has_refs
-          options[:references][key] = export
-        else
-          export[:_references] = options[:references]
+        # Now, we'll compile the calculations
+        self.class._calculated_fields.each do |k, attr|
+          next unless CouchbaseModel::Core::Json.include_field_in_json?(k.to_sym, attr, publicize, only_fields, options)
+          export[k] = calculated_field_value(k)
         end
+        
+        # Finally, we'll build the custom JSON attributes
+        self.class.json_attributes.each do |k, attr_opts|
+          # If we aren't including this JSON attribute, go to the next one
+          next unless CouchbaseModel::Core::Json.include_field_in_json?(k.to_sym, attr_opts[:options], publicize, only_fields, options)          
+          method = attr_opts[:method]
+          
+          # If the method is a proc, then just do that proc
+          if method.is_a?(Proc)
+            export[k] = method.call(self, options, export)
+            next
+          end
+          
+          # We can also allow the method to be a symbol, for easier use
+          method = method.to_sym
+          return unless respond_to?(method)
+
+          # We'll call it in different ways, dependent on the arity of the method
+          # There can be 0-2 attributes on the method, with the first attribute being
+          # the options sent to the json and the second option being the already exported
+          # JSON object itself
+          export[k] = case self.method(method).arity
+          when 0
+            send(method)
+          when 1
+            send(method, options)
+          when -1
+            send(method, options)
+          when 2
+            send(method, options, export)
+          when -2
+            send(method, options, export)
+          end
+        end
+        
+        # If we were send a references object already, add this item to it. Otherwise, create a references object
+        has_refs ? (options[:references][key] = export) : (export[:_references] = options[:references])
         
         export
       end
@@ -102,6 +159,33 @@ class CouchbaseModel
         rescue
           value
         end
+      end
+      
+      def self.parse_json_only(attribute_list)
+        return nil unless attribute_list.is_a?(Array)
+      
+        out = {}
+        
+        # We'll make this list into one of a hash where the keys are the attributes, pointing to the sub attributes
+        attribute_list.each do |attr|
+          breakdown = attr.to_s.split(".")
+          key = breakdown.shift.to_sym
+          if out[key]
+            out[key] << breakdown.join(".")
+          else
+            out[key] = (breakdown.empty? ? true : [breakdown.join(".")])
+          end
+        end
+        
+        out
+      end
+      
+      
+      def self.include_field_in_json?(field, field_options, publicities, only_fields, json_options)
+        return false unless publicities[:_all] || publicities[field] || !field_options[:private]
+        return false if only_fields && !only_fields[field]
+       
+        true
       end
     end
   end

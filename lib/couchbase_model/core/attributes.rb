@@ -103,6 +103,10 @@ class CouchbaseModel
         model.data[attribute] = [] unless model.data[attribute]
         model.data[attribute] << item 
         model.data[attribute].uniq! if unique 
+        
+        # Inform attached methods that this item has changed
+        model.class.invoke_action :attribute_updated, model, attribute
+        
         item
       end
       
@@ -113,10 +117,19 @@ class CouchbaseModel
         modal.data[attribute].delete(CouchbaseModel::Core::Encrypt.hash_attribute(item, options[:encrypt], opts)) if options[:encrypt]
         model.data[attribute].delete(item.id) if item.is_a?(CouchbaseModel)
         model.data[attribute].delete item 
+        
+        # Inform attached methods that this item has changed
+        model.class.invoke_action :attribute_updated, model, attribute
+        
+        item
       end
       
       def self.clear(model, attribute)
         model.data[attribute] = [] 
+        
+        # Inform attached methods that this item has changed
+        model.class.invoke_action :attribute_updated, model, attribute
+        model.data[attribute]
       end
       
       def self.in(model, attribute, item, opts = {})
@@ -137,6 +150,10 @@ class CouchbaseModel
           v = { data: v, expires: (Time.now.utc + options[:ttl]) } if options[:ttl]
           v
         end
+        
+        # Inform attached methods that this item has changed
+        model.class.invoke_action :attribute_updated, model, attribute
+        model.data[attribute]
       end
         
       def self.ensure_type(options, model, k)
