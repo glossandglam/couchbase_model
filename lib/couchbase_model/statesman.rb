@@ -8,28 +8,27 @@ class CouchbaseModel
     end
     
     module ClassMethods
-      @@__statesmen = {}
 
       def states(keys)
         __setup_statesman
-        extra = @@__statesmen[self.name][:states].keys - keys
-        @@__statesmen[self.name][:order] = keys + extra
+        extra = @__statesmen[:states].keys - keys
+        @__statesmen[:order] = keys + extra
       end
       
       def state(key, state)
         __setup_statesman
-        @@__statesmen[self.name][:states][key] = [] unless @@__statesmen[self.name][key].is_a?(Array)
-        @@__statesmen[self.name][:states][key] << state
+        @__statesmen[:states][key] = [] unless @__statesmen[key].is_a?(Array)
+        @__statesmen[:states][key] << state
       end
       
       def has_state?(key)
         __setup_statesman
-        @@__statesmen[self.name][:states][key] ? true : false
+        @__statesmen[:states][key] ? true : false
       end
       
       def next_state(key = nil)
         __setup_statesman
-        order = @@__statesmen[self.name][:order].empty? ? @@__statesmen[self.name][:states].keys : @@__statesmen[self.name][:order]
+        order = @__statesmen[:order].empty? ? @__statesmen[:states].keys : @__statesmen[:order]
         if key
           key = order.index(key)
           key = key ? key + 1 : nil
@@ -41,11 +40,11 @@ class CouchbaseModel
       
       def state_actions(key)
         __setup_statesman
-         @@__statesmen[self.name][:states][key]
+         @__statesmen[:states][key]
       end
       
       def __setup_statesman
-        @@__statesmen[self.name] = { states: {}, order: []} unless @@__statesmen[self.name].is_a?(Hash)
+        @__statesmen = { states: {}, order: []} unless @__statesmen.is_a?(Hash)
       end
     end
       

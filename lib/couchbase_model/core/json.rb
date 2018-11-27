@@ -5,12 +5,10 @@ class CouchbaseModel
         base.extend(ClassMethods)
       end
       
-      module ClassMethods
-        @@_custom_json_attributes = {}
-        
+      module ClassMethods        
         def json_attributes
-          @@_custom_json_attributes[self.name] = {} unless @@_custom_json_attributes[self.name]
-          @@_custom_json_attributes[self.name]
+          @_custom_json_attributes = {} unless @_custom_json_attributes
+          @_custom_json_attributes
         end
         
         def json_attribute(attribute, options = {}, &block)
@@ -34,6 +32,7 @@ class CouchbaseModel
       # It is important to note that while (1) and (2) will be cached as they normally would
       # (whether from the first calculation or save), (3) will be freshly calculated every time
       def as_json(options = {})  
+      
         #Setup the references
         has_refs = options[:references].is_a?(Hash)
         options[:references] = {} unless has_refs
@@ -73,7 +72,8 @@ class CouchbaseModel
           
           # We can also allow the method to be a symbol, for easier use
           method = method.to_sym
-          return unless respond_to?(method)
+          
+          next unless respond_to?(method, true)
 
           # We'll call it in different ways, dependent on the arity of the method
           # There can be 0-2 attributes on the method, with the first attribute being

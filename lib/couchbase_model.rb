@@ -10,6 +10,12 @@ Dir[File.dirname(__FILE__) + "/couchbase_model/**/*.rb"].each {|f| require f}
 
 class CouchbaseModel
   include CouchbaseModel::Base
+      
+  def self.inherited(subclass)
+    return unless @to_execute_on_inherited
+    @to_execute_on_inherited.each {|block| block.call(self, subclass)}
+  end
+  
   include CouchbaseModel::Core::Attributes
   include CouchbaseModel::Core::Json
   include CouchbaseModel::Core::Saving

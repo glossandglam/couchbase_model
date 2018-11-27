@@ -11,12 +11,11 @@ class CouchbaseModel
       MAX_CONFLICT_TRIES = 3
       
       module ClassMethods
-        @@_elasticsearch = {}
         def elastic_search(options = nil)
-          unless @@_elasticsearch.key?(self.name) or !options.is_a?(Hash)
-            @@_elasticsearch[self.name] = {}.merge options
+          unless @_elasticsearch or !options.is_a?(Hash)
+            @_elasticsearch = {}.merge options
           end
-          @@_elasticsearch[self.name]
+          @_elasticsearch
         end
         
         def search_wildcard(attribute, value, options = {})

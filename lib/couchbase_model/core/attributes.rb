@@ -7,24 +7,25 @@ class CouchbaseModel
         base.include CouchbaseModel::Core::Encrypt
       end
       
-      module ClassMethods
-        @@_attributes = {}
+      module ClassMethods        
+        def _attributes
+          @attributes = {} unless @attributes.is_a?(Hash)
+          return @attributes 
+        end
         
         def attributes(keys = true)
-          @@_attributes[self.name] = {} unless @@_attributes.key? self.name
-          keys ? @@_attributes[self.name].keys : @@_attributes[self.name]
+          keys ? _attributes.keys : _attributes
         end
         
         def attribute(attribute, options = {})
           attribute = attribute.to_sym
-          @@_attributes[self.name] = {} unless @@_attributes.key? self.name
-          unless @@_attributes[self.name].key?(attribute)
-            @@_attributes[self.name][attribute] = options
+          unless _attributes.key?(attribute)
+            _attributes[attribute] = options
             defined_attribute_methods(attribute).each do |method, func|
               self.send(func, method, attribute, options)
             end
           end
-          @@_attributes[self.name][attribute]
+          _attributes[attribute]
         end
         
         protected

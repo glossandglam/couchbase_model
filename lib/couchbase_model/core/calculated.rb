@@ -20,7 +20,12 @@ class CouchbaseModel
       end
       
       module ClassMethods
-        @@_calculated_fields = {}
+        
+        # A fast method for looking up the calculated fields on "this" model
+        def _calculated_fields
+          @_calculated_fields = {} unless @_calculated_fields
+          @_calculated_fields
+        end
         
         # Dependencies are fields that, when they change, cause a change in one or more
         # of the calculations.
@@ -29,7 +34,10 @@ class CouchbaseModel
         # are accessed / used as dependencies.
         #
         # Without any dependencies, a calculation will never occur
-        @@_calculated_field_dependencies = {}
+        def _calculated_field_dependencies
+          @_calculated_field_dependencies = {} unless @_calculated_field_dependencies
+          @_calculated_field_dependencies
+        end
       
         def calculated_field(name, dependencies = [], options = {}, &block)
           name = name.to_sym
@@ -50,17 +58,7 @@ class CouchbaseModel
           define_method(name) { self.calculated_field_value(name) }
         end
         
-        # A fast method for looking up the calculated fields on "this" model
-        def _calculated_fields
-          @@_calculated_fields[self.name] = {} unless @@_calculated_fields[self.name]
-          @@_calculated_fields[self.name]
-        end
-        
         # These are lists of calculations that are dependent on particular attributes
-        def _calculated_field_dependencies
-          @@_calculated_field_dependencies[self.name] = {} unless @@_calculated_field_dependencies[self.name]
-          @@_calculated_field_dependencies[self.name]
-        end
         
         private
         
@@ -124,7 +122,7 @@ class CouchbaseModel
       end
       
       def clear_all_calculated_fields
-        self.class._calculated_fields.each {|k| self.data.delete k}
+        self.class._calculated_fields.keys.each {|k| self.data.delete k}
       end
       
       def refresh_calculated_fields
@@ -135,7 +133,7 @@ class CouchbaseModel
       end
       
       def recalculate_attached_calculated_fields (name)
-        (self.class._calculated_field_dependencies[name] || []).each {|name| recalculate_calculated_field name}
+        (self.class._calculated_field_dependencies[name] || []).each {|field| recalculate_calculated_field field}
       end
     end
   end

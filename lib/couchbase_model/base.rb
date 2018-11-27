@@ -5,7 +5,13 @@ class CouchbaseModel
       base.extend(ClassMethods)
     end
     
-    module ClassMethods
+    module ClassMethods    
+      def to_execute_on_inherited(&block)
+        return unless self.eql?(CouchbaseModel)
+        @to_execute_on_inherited = [] unless @to_execute_on_inherited
+        @to_execute_on_inherited << block
+      end
+    
       def find(object = nil)
         return nil unless object
         load object
@@ -44,11 +50,9 @@ class CouchbaseModel
         self.name
       end
       
-      @@_is_id_random = {}
-      
       def is_id_random?(value = nil)
-        return (@@_is_id_random.key?(self.name) ? @@_is_id_random[self.name] : true) if value.nil?
-        @@_is_id_random[self.name] = value
+        return (@_is_id_random.nil? ? true : @_is_id_random) if value.nil?
+        @_is_id_random = value
       end
       
       def _generate_couchsitter_model(model, data, references = {})
