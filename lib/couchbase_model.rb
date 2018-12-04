@@ -73,15 +73,21 @@ class CouchbaseModel
     
     def all_couchbase_models
       models = []
-      Dir[Rails.root.join('app', 'models').to_s + "/**/*.rb"].each do |f|
-        f.slice!(Rails.root.join('app', 'models').to_s + "/")
-        f.slice!(".rb")
-        
-        require f unless Module.const_defined?(f.camelize)
-        model = Module.const_get(f.camelize) if Module.const_defined?(f.camelize)
-        next unless model
-        next unless model.ancestors.include?(CouchbaseModel)
-        models << model
+      
+      # If we are using Rails, we can require all the models and figure it out
+      if defined?(Rails)
+        Dir[Rails.root.join('app', 'models').to_s + "/**/*.rb"].each do |f|
+          f.slice!(Rails.root.join('app', 'models').to_s + "/")
+          f.slice!(".rb")
+          
+          class_name = f.slice("concerns/").camelize
+          
+          require f unless Module.const_defined?(class_name)
+          model = Module.const_get(class_name) if Module.const_defined?(class_name)
+          next unless model
+          next unless model.ancestors.include?(CouchbaseModel)
+          models << model
+        end
       end
       models
     end
