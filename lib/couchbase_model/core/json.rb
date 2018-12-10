@@ -185,7 +185,7 @@ class CouchbaseModel
         # If this is a private field that is not publicized, then nope
         return false unless publicities[:_all] || publicities[field] || !field_options[:private]
         # If we are only requesting a field, or that field is only allowed when it is requested, return false if it is not
-        return false if (only_fields || field_options[field][:visibility] === false) && !only_fields[field]
+        return false if (only_fields || field_options[:visibility] === false) && !only_fields[field]
         true
       end
     end
