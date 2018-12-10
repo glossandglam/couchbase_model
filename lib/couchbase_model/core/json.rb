@@ -184,8 +184,15 @@ class CouchbaseModel
       def self.include_field_in_json?(field, field_options, publicities, only_fields, json_options)
         # If this is a private field that is not publicized, then nope
         return false unless publicities[:_all] || publicities[field] || !field_options[:private]
-        # If we are only requesting a field, or that field is only allowed when it is requested, return false if it is not
-        return false if (only_fields || field_options[:visibility] === false) && !only_fields[field]
+        
+        if only_fields
+          # If we have set only fields, and this field is not one of them, nevermind
+          return false unless only_fields[field]
+        else
+          # If a field is set as visibility = false, then it can only be viewed as an only field
+          return false if field_options[:visibility] === false
+        end
+        
         true
       end
     end
