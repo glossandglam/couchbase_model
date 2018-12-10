@@ -80,7 +80,8 @@ class CouchbaseModel
           f.slice!(Rails.root.join('app', 'models').to_s + "/")
           f.slice!(".rb")
           
-          class_name = f.clone.slice!("concerns/")
+          class_name = f.clone
+          class_name.slice!("concerns/")
           class_name = class_name.camelize
           
           require f unless Module.const_defined?(class_name)
