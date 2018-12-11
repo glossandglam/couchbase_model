@@ -137,7 +137,7 @@ class CouchbaseModel
         
         # Temporary Placeholder
         options[:references][key] = true
-        mdl = object.is_a?(CouchbaseModel) ? object : attributes[:class].find(object)
+        mdl = object.is_a?(CouchbaseModel) ? object : attributes[:class].find(id)
         out = mdl.is_a?(CouchbaseModel) ? mdl.as_json(options) : nil
         options[:references][key] = out
         options[:api_version].to_i > 0 ? key : out
