@@ -76,7 +76,7 @@ class CouchbaseModel
         return nil unless result
         model = new
         model.id = id
-        _generate_couchsitter_model(model, result, references || {})
+        references[key(id)] = _generate_couchsitter_model(model, result, references || {})
       end
       
       # This function will load multiple ids and return an array
@@ -97,7 +97,7 @@ class CouchbaseModel
             next unless results[i]
             model = new
             model.id = missing[i]
-            found[missing[i]] = _generate_couchsitter_model(model, results[i], references)
+            references[key(model.id)] = found[missing[i]] = _generate_couchsitter_model(model, results[i], references)
           end if results.is_a?(Array)
         end
         

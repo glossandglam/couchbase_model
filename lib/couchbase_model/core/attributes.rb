@@ -82,9 +82,11 @@ class CouchbaseModel
       def self.get(model, options, attribute, func_opts)         
         if options[:multiple]               
           model.data[attribute] = model.data[attribute].nil? ? [] : [ model.data[attribute] ] unless model.data[attribute].is_a?(Array)
-          model.data[attribute] = (options[:multiple] == :list ? model.data[attribute] : model.data[attribute].uniq).map {|k| func_opts[:id].nil? && options[:class] && !k.is_a?(CouchbaseModel) ? options[:class].load(k, model.__references) : k}
+          model.data[attribute] = (options[:multiple] == :list ? model.data[attribute] : model.data[attribute].uniq).map do |k| 
+            gather_couchbase_model k, options, func_opts, model.__references
+          end
         else
-          model.data[attribute] = options[:class].load(model.data[attribute], model.__references) if func_opts[:id].nil? && options[:class] && !model.data[attribute].is_a?(CouchbaseModel)
+          model.data[attribute] = gather_couchbase_model model.data[attribute], options, func_opts, model.__references unless func_opts[:id]
         end
         
         # Going to have to check this type of ensurance
@@ -95,6 +97,15 @@ class CouchbaseModel
           v = v.respond_to?(:id) && func_opts[:id] ? v.id : v
           v
         end
+      end
+      
+      def self.gather_couchbase_model(id, options, function_options, references)
+        return id if function_options[:id]
+        
+        cls = options[:class]
+        return id unless cls
+        return id if id.is_a?(CouchbaseModel)
+        references[cls.key(id)] || cls.load(id, references)
       end
       
       def self.add_to(model, attribute, item, unique = true, opts = {})  
