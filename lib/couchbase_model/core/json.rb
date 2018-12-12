@@ -49,7 +49,7 @@ class CouchbaseModel
         # Fiirst, let's compile the attributes
         self.class.attributes(false).each do |k, attr|
           next unless CouchbaseModel::Core::Json.include_field_in_json?(k.to_sym, attr, publicize, only_fields, options)
-          export[k] = export_for_json k, data[k], attr, (only_fields ? options.merge(only: only_fields[k]) : options)
+          export[k] = export_for_json k, data[k], attr, (only_fields ? options.merge(select: only_fields[k]) : options)
         end
         
         # Now, we'll compile the calculations
