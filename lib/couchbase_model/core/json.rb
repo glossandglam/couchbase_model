@@ -42,7 +42,7 @@ class CouchbaseModel
         
         # For Couchbase models, use as_json
         publicize = options[:publicize].is_a?(Hash) ? options[:publicize] : {}
-        only_fields = CouchbaseModel::Core::Json.parse_json_only options[:only]
+        only_fields = CouchbaseModel::Core::Json.parse_json_only(options[:select])
         
         export = {id: self.id}
         
