@@ -189,8 +189,9 @@ class CouchbaseModel
           # If we have set only fields, and this field is not one of them, nevermind
           return false unless only_fields[field]
         else
+          show_anyway = json_options[:show] || []
           # If a field is set as visibility = false, then it can only be viewed as an only field
-          return false if field_options[:visibility] === false
+          return false if field_options[:visibility] === false && !show_anyway.include?(field)
         end
         
         true
