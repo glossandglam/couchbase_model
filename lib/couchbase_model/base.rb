@@ -121,8 +121,6 @@ class CouchbaseModel
         end      
       end
     end
-  
-    attr_accessor :__references
      
     def initialize(attributes = {})
       @_firstdata = attributes.deep_dup
@@ -199,6 +197,10 @@ class CouchbaseModel
     def __references
       @references = {} unless @references
       @references
+    end
+    
+    def __references=(refs = {})
+      @references = refs.is_a?(Hash) ? refs : {}
     end
     
     protected
