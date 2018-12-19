@@ -95,7 +95,7 @@ class CouchbaseModel
           (dependencies - fields_checked).each do |dependency|
              fields_checked << dependency
           
-            sub_dependencies = _calculated_field_dependencies[dependency]
+            sub_dependencies = _calculated_fields[dependency] && _calculated_fields[dependency][:dependencies]
             # If a dependency itself has no dependencies, then it can be just added
             unless sub_dependencies
               dependency_list << dependency
