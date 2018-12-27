@@ -61,6 +61,22 @@ class CouchbaseModel
       @@_init
     end
     
+    def metrics
+      @metrics.is_a?(Hash) ? @metrics : (@metrics = {})
+    end
+    
+    def record_metric(metric)
+      time = Time.now
+      res = yield
+      
+      time = (Time.now - time).to_f
+      metrics[metric] = { avg: 0, cnt: 0 } unless metrics[metric].is_a?(Hash)
+      metrics[metric][:avg] = ((metrics[metric][:avg] * metrics[metric][:cnt]) + time) / (metrics[metric][:cnt] + 1)
+      metrics[metric][:cnt] += 1
+      
+      res
+    end
+    
     def couchbase
       @@_cb = Couchbase.connect(init.couchbase) unless @@_cb
       @@_cb    

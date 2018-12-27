@@ -78,7 +78,6 @@ class CouchbaseModel
             body[:sort] = { options[:sort] => options[:order] || "asc" } if options[:sort]
           end
           
-          
           results = self.elasticsearch_client.search index: elastic_search[:index],
                                 type:  elastic_search[:type],
                                 body: body

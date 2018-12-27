@@ -37,15 +37,22 @@ class CouchbaseModel
       end
       
       def save(options = {})
-        unless options[:skip_filters]
-          return false if !self.id && self.class.invoke_action(:before_create, self) === false
-          return false if self.class.invoke_action(:before_save, self) === false
+        self.class.record_metric :pre_save do      
+          unless options[:skip_filters]
+            return false if !self.id && self.class.invoke_action(:before_create, self) === false
+            return false if self.class.invoke_action(:before_save, self) === false
+          end
         end
         
         return false unless (saved_data = perform_actual_save)        
         
-        self.class.invoke_action(:after_save, self) unless options[:skip_filters]
-        self.class._generate_couchsitter_model(self, saved_data)
+        self.class.record_metric :post_save_filters do
+          self.class.invoke_action(:after_save, self) unless options[:skip_filters]
+        end
+        
+        self.class.record_metric :post_save_build do
+          self.class._generate_couchsitter_model(self, saved_data)
+        end
         true
       end
       
@@ -64,27 +71,27 @@ class CouchbaseModel
       protected
       
       def perform_actual_save(tries = 0, changed_data = :all)
-        return if @save_lock
+        return if @save_lock        
         
-        # Generate the ID now if the ID is not random, so that we can load anything that may already exist
-        self.id = generate_id_for_save! unless self.class.is_id_random?
-        # Prepare the Data
-        data = prep_the_data_for_save changed_data
-        begin
-          # Set if the ID is set.
-          if self.id
-            return self.class.couchbase.set(self.key, data, format: :plain) ? data : false
-          else
-            opts = { format: :plain }
-            opts[:ttl] = self.class.ttl if self.class.ttl
-            generate_id_for_save!
-            return self.class.couchbase.add(self.key, data, opts) ? data : false
+        self.class.record_metric :actual_save do
+          # Generate the ID now if the ID is not random, so that we can load anything that may already exist
+          self.id = generate_id_for_save! unless self.class.is_id_random?
+          # Prepare the Data
+          data = prep_the_data_for_save changed_data
+          begin
+            # Set if the ID is set.
+            if self.id
+              self.class.couchbase.set(self.key, data, format: :plain) ? data : false
+            else
+              opts = { format: :plain }
+              opts[:ttl] = self.class.ttl if self.class.ttl
+              generate_id_for_save!
+              self.class.couchbase.add(self.key, data, opts) ? data : false
+            end
+          rescue Exception => e
+            perform_actual_save(tries + 1, changed_data) unless tries < TOTAL_SAVE_ATTEMPTS
           end
-        rescue Exception => e
-          return perform_actual_save(tries + 1, changed_data) unless tries < TOTAL_SAVE_ATTEMPTS
         end
-        
-        false
       end
       
       def generate_id_for_save!
