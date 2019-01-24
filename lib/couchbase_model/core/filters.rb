@@ -37,9 +37,9 @@ class CouchbaseModel
           end
         end
         
-        def invoke_action(action, object, options = nil)
+        def invoke_action(action, object, options = nil, invoke_options = {})
           return unless _actions[action]
-          object.clear_errors_from_filters!
+          object.clear_errors_from_filter!(action) 
           _actions[action].uniq.each do |data|
             if data[:method].is_a?(Array)
               next unless data[:method].first.is_a?(Object)
@@ -52,24 +52,47 @@ class CouchbaseModel
         end
       end
       
-      def errors_from_filters
+      def errors_from_filter(filter)
+        filter = :default unless filter
+        errors_from_all_filters[filter] = {} unless errors_from_all_filters[filter]
+        errors_from_all_filters[filter]
+      end
+      
+      def errors_from_all_filters
         @errors_from_filters = {} unless @errors_from_filters
         @errors_from_filters
+      end
+      
+      def errors_from_filters
+        return {} if errors_from_all_filters.empty?
+        errors_from_all_filters.values.reduce Hash.new, :merge
       end
       
       def clear_errors_from_filters!
         @errors_from_filters.clear if @errors_from_filters
       end
       
+      def clear_errors_from_filter!(filter)
+        errors_from_filter(filter).clear
+      end
+      
       protected
       
       def add_filter_error(message, error = :error)
-        errors_from_filters[error] = message
+        errors_from_filter(_currently_active_filter)[error] = message
         false
       end
       
       def invoke_action!(action)
         self.class.invoke_action(action, self)
+      end
+      
+      def _currently_active_filter
+        @_currently_active_filter || :default
+      end
+      
+      def _set_currently_active_fllter(action)
+        @_currently_active_filter = action
       end
     end
   end

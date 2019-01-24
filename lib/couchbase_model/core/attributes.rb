@@ -117,7 +117,7 @@ class CouchbaseModel
         model.data[attribute].uniq! if unique 
         
         # Inform attached methods that this item has changed
-        model.class.invoke_action :attribute_updated, model, attribute
+        model.class.invoke_action :attribute_updated, model, attribute, {dont_clear_errors: true}
         
         item
       end
@@ -131,7 +131,7 @@ class CouchbaseModel
         model.data[attribute].delete item 
         
         # Inform attached methods that this item has changed
-        model.class.invoke_action :attribute_updated, model, attribute
+        model.class.invoke_action :attribute_updated, model, attribute, {dont_clear_errors: true}
         
         item
       end
@@ -140,7 +140,7 @@ class CouchbaseModel
         model.data[attribute] = [] 
         
         # Inform attached methods that this item has changed
-        model.class.invoke_action :attribute_updated, model, attribute
+        model.class.invoke_action :attribute_updated, model, attribute, {dont_clear_errors: true}
         model.data[attribute]
       end
       
@@ -164,7 +164,7 @@ class CouchbaseModel
         end
         
         # Inform attached methods that this item has changed
-        model.class.invoke_action :attribute_updated, model, attribute
+        model.class.invoke_action :attribute_updated, model, attribute, {dont_clear_errors: true}
         model.data[attribute]
       end
         
