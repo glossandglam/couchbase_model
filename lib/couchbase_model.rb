@@ -78,8 +78,17 @@ class CouchbaseModel
     end
     
     def couchbase
-      @@_cb = Couchbase.connect(init.couchbase) unless @@_cb
-      @@_cb    
+      return @@_cb if @@_cb
+      
+      host = init.couchbase[:host] 
+      username = init.couchbase[:username] 
+      password = init.couchbase[:password]
+      bucket = init.couchbase[:bucket]
+      
+      cluster = Couchbase::Cluster.connect "couchbase://#{host}", username, password
+      bucket = cluster.bucket bucket
+
+      @@_cb = CouchbaseModel::CouchbaseWrapper.new(bucket.default_collection)
     end
     
     def elasticsearch_client
