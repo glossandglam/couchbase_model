@@ -8,7 +8,7 @@ class CouchbaseModel
       key.is_a?(Array) ? get_multiple(key, options) : get_single(key, options)
     end
 
-    def add(key, item, options = {}})
+    def add(key, item, options = {})
       opts = Couchbase::Options::Insert.new
       opts.expiry = options[:ttl] if options[:ttl]
 
@@ -19,7 +19,7 @@ class CouchbaseModel
       opts = Couchbase::Options::Upsert.new
       opts.expiry = options[:ttl] if options[:ttl]
 
-      @couchbase.upsert key, prepare_for_setting(item), options
+      @couchbase.upsert key, prepare_for_setting(item), opts
     end
 
     def delete(key, options = {})
