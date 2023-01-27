@@ -29,7 +29,7 @@ class CouchbaseModel
     private
 
     def get_single(key, options = {})
-      opts = Couchbase::Options::GetM.new
+      opts = Couchbase::Options::Get.new
       process_gotten_item @couchbase.get(key, opts)
     end
 
