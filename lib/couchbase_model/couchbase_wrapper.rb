@@ -1,5 +1,5 @@
 class CouchbaseModel
-  module CouchbaseWrapper 
+  class CouchbaseWrapper 
     def initialize(couchbase)
       @couchbase = couchbase
     end
