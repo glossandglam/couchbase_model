@@ -35,7 +35,7 @@ class CouchbaseModel
 
     def get_multiple(keys, options = {})
       opts = Couchbase::Options::GetMulti.new
-      process_gotten_item @couchbase.get_multi(key, opts)
+      process_gotten_item @couchbase.get_multi(keys, opts)
     end
 
     def remove_single(key, options = {})
