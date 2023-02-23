@@ -58,7 +58,6 @@ class CouchbaseModel
         
         def __count_with_query(query)
           results = self.elasticsearch_client.count index: elastic_search[:index],
-                                type:  elastic_search[:type],
                                 body: { query: query }
           results["count"].to_i
         end
@@ -79,9 +78,7 @@ class CouchbaseModel
           end
           
           results = self.elasticsearch_client.search index: elastic_search[:index],
-                                type:  elastic_search[:type],
                                 body: body
-          
           
           ids = results["hits"]["hits"].map{|item| item["_id"]}
           options[:load] ? load_many(ids) : ids
@@ -90,7 +87,7 @@ class CouchbaseModel
         def elasticsearch_destroy_all(ids)
           begin
             (id.is_a?(Array) ? ids : [ids]).each do |id|
-              self.elasticsearch_client.delete index: elastic_search[:index], type: elastic_search[:type], id: self.id
+              self.elasticsearch_client.delete index: elastic_search[:index], id: self.id
             end
           rescue
           end
@@ -100,7 +97,7 @@ class CouchbaseModel
         def elasticsearch_create_bulk_update(list, do_change = false)
           out = []
           list.each do |model|
-            out << { update: { _id: model.id, _type: model.class.elastic_search[:type], _index: model.class.elastic_search[:index]}}
+            out << { update: { _id: model.id, _index: model.class.elastic_search[:index]}}
             out << CouchbaseModel::ElasticSearch::General.format_update(model, update: true, change: do_change)
             
             if out.count > 500
@@ -239,7 +236,7 @@ class CouchbaseModel
         # Later data will not be absolutely correct, so we're just going to just try the update again.
         while tries < MAX_CONFLICT_TRIES
           begin
-            self.class.elasticsearch_client.index index: self.class.elastic_search[:index], type: self.class.elastic_search[:type], id: self.id,
+            self.class.elasticsearch_client.index index: self.class.elastic_search[:index], id: self.id,
               body: CouchbaseModel::ElasticSearch::General.format_update(self)
             break
           rescue Exception => e
@@ -278,7 +275,7 @@ class CouchbaseModel
       
       def elasticsearch_destroy
         begin
-          self.class.elasticsearch_client.delete index: self.class.elastic_search[:index], type: self.class.elastic_search[:type], id: self.id
+          self.class.elasticsearch_client.delete index: self.class.elastic_search[:index], id: self.id
         rescue
         end
       end

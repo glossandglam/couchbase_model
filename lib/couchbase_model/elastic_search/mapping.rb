@@ -29,7 +29,7 @@ class CouchbaseModel
             puts options.inspect
             puts map.inspect
             
-            put_mapping options[:index], options[:type], map
+            put_mapping options[:index], map
           end
         end
     
@@ -84,15 +84,15 @@ class CouchbaseModel
         #
         # If the index does not exist, it builds it according to the index attributes provided
         # to the couchbase model object in an initializer
-        def put_mapping(index, type, map, inside = false)
+        def put_mapping(index, map, inside = false)
           begin
-            CouchbaseModel.elasticsearch_client.indices.put_mapping index: index, type: type, body: {
-              map[:type] => { properties: map }
+            CouchbaseModel.elasticsearch_client.indices.put_mapping index: index, body: {
+              properties: map
             }
           rescue
             return if inside
             create_index index
-            put_mapping(index, type, map, true)
+            put_mapping(index, map, true)
           end
         end
         
