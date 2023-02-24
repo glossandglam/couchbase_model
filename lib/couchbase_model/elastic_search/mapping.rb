@@ -100,7 +100,7 @@ class CouchbaseModel
         def create_index(idx)
           indices = CouchbaseModel.init.elasticsearch.indexes
           return unless indices
-          index = indices[idx]
+          index = indices[idx] || indicies[:default]
           return unless index
           settings = index[:settings]
           return unless settings
