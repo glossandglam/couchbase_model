@@ -21,11 +21,15 @@ class CouchbaseModel
         def search_wildcard(attribute, value, options = {})
           es_attr = CouchbaseModel::ElasticSearch::General.elasticsearch_attributes(self)
           value = CouchbaseModel::ElasticSearch::General.format_fields(value, es_attr[attribute])
-          query = {wildcard: { attribute => { value: (options[:both_sides] ? "*" : "")+"#{value}*"}}}
+          query = []
+          query << {wildcard: { attribute => { value: (options[:both_sides] ? "*" : "")+"#{value}*"}}}
+          
           if options[:where].is_a? Hash
-            query = { filtered: {query: query, filter: {bool: { must: CouchbaseModel::ElasticSearch::General.elasticsearch_filters(options[:where], es_attr)}}}}
+            filters = CouchbaseModel::ElasticSearch::General.elasticsearch_filters(options[:where], es_attr)
+            query += filters
           end
           
+          query = { bool: { must: query }}
           options[:count] ? __count_with_query(query) : __search_with_query(query, options)  
         end
         
@@ -34,25 +38,23 @@ class CouchbaseModel
           options[:sort] = attribute unless options[:sort]
           value = CouchbaseModel::ElasticSearch::General.format_fields(value,  es_attr[attribute])
           filter = value.is_a?(Array) ? { terms: { attribute => value }} : { term: { attribute => value }}
-          __search_with_query({ filtered: { filter: filter }}, options)
+          __search_with_query({ bool: { must: filter }}, options)
         end
         
         def search_all(options = {})
           es_attr = CouchbaseModel::ElasticSearch::General.elasticsearch_attributes(self)
-          query = {}
           
-          query[:match] = options[:match] if options[:match].is_a?(Hash)
-          query[:multi_match] = options[:multi_match] if options[:multi_match].is_a?(Hash)
+          query = []
+      
+          query += (options[:match] || options[:multi_match]).map do |key, value|
+            { match: { key => value }}
+          end if (options[:match] || options[:multi_match]).is_a?(Hash)
           
           if options[:where].is_a?(Hash)
-            if query.empty?
-              query = { filtered: { filter: { bool: { must: CouchbaseModel::ElasticSearch::General.elasticsearch_filters(options[:where], es_attr) }}}}
-            else
-              query = { filtered: { query: query, filter: { bool: { must: CouchbaseModel::ElasticSearch::General.elasticsearch_filters(options[:where], es_attr) }}}}
-            end
+            query += CouchbaseModel::ElasticSearch::General.elasticsearch_filters(options[:where], es_attr)
           end
           
-          query = { match_all: {} } if query.empty?
+          query = query.empty? ? { match_all: {} } : { bool: { must: query }}
           options[:count] ? __count_with_query(query) : __search_with_query(query, options)                  
         end
         
