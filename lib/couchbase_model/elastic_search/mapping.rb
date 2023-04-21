@@ -18,12 +18,13 @@ class CouchbaseModel
             
             # Build up the attributes
             klass.attributes(false).each do |name, attr|
-              next unless attr[:elastic_search]
+              es_attr = attr[:elastic_search]
+              next unless es_attr
               
               map[name] = {}
-              map[name][:type] = attr[:type] || :string
-              map[name][:index] = attr[:index] || :not_analyzed if map[name][:type].to_sym == :string
-              map[name][:format] = attr[:format] if attr.key? :format
+              map[name][:type] = es_attr[:type] || :keyword
+              map[name][:index] = es_attr[:index] || :not_analyzed if map[name][:type].to_sym == :string
+              map[name][:format] = es_attr[:format] if es_attr.key? :format
             end
             
             puts options.inspect
