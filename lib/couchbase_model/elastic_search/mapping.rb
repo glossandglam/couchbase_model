@@ -25,7 +25,7 @@ class CouchbaseModel
               map[name] = {}
 
               if es_attr[:type] == :string
-                es_attr[:type] = es_attr[:index] == :not_analyzed ? :keyword : :text
+                es_attr[:type] = es_attr[:index] == :analyzed ? :text : :keyword
               end
 
               map[name][:type] = es_attr[:type] || :keyword
