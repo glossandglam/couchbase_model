@@ -9,6 +9,7 @@ class CouchbaseModel
         def update_mappings
           all_elasticsearch_models.each do |klass|
             options = klass.elastic_search
+            puts klass.to_s
             puts options.inspect
             
             next unless options
@@ -22,12 +23,15 @@ class CouchbaseModel
               next unless es_attr
               
               map[name] = {}
+
+              if es_attr[:type] == :string
+                es_attr[:type] = es_attr[:index] == :not_analyzed ? :keyword : :text
+              end
+
               map[name][:type] = es_attr[:type] || :keyword
-              map[name][:index] = es_attr[:index] || :not_analyzed if map[name][:type].to_sym == :string
               map[name][:format] = es_attr[:format] if es_attr.key? :format
             end
             
-            puts options.inspect
             puts map.inspect
             
             put_mapping options[:index], map
@@ -46,11 +50,11 @@ class CouchbaseModel
             
             begin
               if type && idx == index.to_sym
-                CouchbaseModel.elasticsearch_client.indicies.delete_mapping index: index, type: type
+                CouchbaseModel.elasticsearch_client.indices.delete_mapping index: index, type: type
                 return 
               end
               
-              CouchbaseModel.elasticsearch_client.indicies.delete index: idx
+              CouchbaseModel.elasticsearch_client.indices.delete index: idx
             rescue
             end
           end
