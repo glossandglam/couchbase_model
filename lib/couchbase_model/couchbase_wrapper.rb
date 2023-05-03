@@ -30,7 +30,13 @@ class CouchbaseModel
 
     def get_single(key, options = {})
       opts = Couchbase::Options::Get.new
-      process_gotten_item @couchbase.get(key, opts)
+      document = begin
+        @couchbase.get(key, opts) 
+      rescue Couchbase::Error::DocumentNotFound 
+        nil
+      end
+
+      process_gotten_item document
     end
 
     def get_multiple(keys, options = {})
