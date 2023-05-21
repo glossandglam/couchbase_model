@@ -79,9 +79,9 @@ class CouchbaseModel
             body[:sort] = { options[:sort] => options[:order] || "asc" } if options[:sort]
           end
           
-          if const_defined?(Rails)
+          if const_defined?("Rails")
             Rails.logger.info "ES Query -----------------------"
-            Rails.logger.info body.inspect
+            Rails.logger.info body.to_json
             Rails.logger.info "--------------------------------"
           end
 
