@@ -79,6 +79,12 @@ class CouchbaseModel
             body[:sort] = { options[:sort] => options[:order] || "asc" } if options[:sort]
           end
           
+          if const_defined?(Rails)
+            Rails.logger.info "ES Query -----------------------"
+            Rails.logger.info body.inspect
+            Rails.logger.info "--------------------------------"
+          end
+
           results = self.elasticsearch_client.search index: elastic_search[:index],
                                 body: body
           
@@ -94,7 +100,6 @@ class CouchbaseModel
           rescue
           end
         end
-        
       
         def elasticsearch_create_bulk_update(list, do_change = false)
           out = []
