@@ -177,9 +177,9 @@ class CouchbaseModel
           when :not
             filters << { bool: { must_not: elasticsearch_filters(v, opts)}}
           when :or 
-            filters << { bool: { should: v.map{|vv| elasticsearch_filters(vv, opts)}}}
+            filters << { bool: { should: v.map{|vv| elasticsearch_filters(vv, opts)}.flatten }}
           when :and
-            filters << { bool: { must: v.map{|vv|elasticsearch_filters(vv, opts)}}}
+            filters << { bool: { must: v.map{|vv|elasticsearch_filters(vv, opts)}.flatten }}
           else
             if v.is_a? Hash
               v.each do |nn, vv|
@@ -195,8 +195,8 @@ class CouchbaseModel
                   end
                   filters << { range: { n => rg }}
                 when :exists
-                  out = { missing: { field: n }}
-                  out = { not: out } if vv
+                  out = { exists: { field: n }}
+                  out = { bool: { must_not: out } } unless vv
                   filters << out
                 when :distance
                   next unless vv.is_a?(Hash)
