@@ -12,14 +12,14 @@ class CouchbaseModel
       opts = Couchbase::Options::Insert.new
       opts.expiry = options[:ttl] if options[:ttl]
 
-      @couchbase.insert key, prepare_for_setting(item), opts
+      @couchbase.insert key, prepare_for_setting(item, key), opts
     end
 
     def set(key, item, options = {})
       opts = Couchbase::Options::Upsert.new
       opts.expiry = options[:ttl] if options[:ttl]
 
-      @couchbase.upsert key, prepare_for_setting(item), opts
+      @couchbase.upsert key, prepare_for_setting(item, key), opts
     end
 
     def delete(key, options = {})
@@ -65,11 +65,11 @@ class CouchbaseModel
       item["__val"]
     end
 
-    def prepare_for_setting(item)
+    def prepare_for_setting(item, key = nil)
       return item if item.is_a?(Hash)
       return item.map {|child| prepare_for_setting(child)} if item.is_a?(Array)
 
-      { "__val" => item }
+      { "__val" => item, "__key" => key }
     end
   end
 end
