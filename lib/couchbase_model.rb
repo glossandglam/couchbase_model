@@ -109,8 +109,13 @@ class CouchbaseModel
           class_name.slice!("concerns/")
           class_name = class_name.camelize
           
-          require f unless Module.const_defined?(class_name)
-          model = Module.const_get(class_name) if Module.const_defined?(class_name)
+          begin
+            model = Module.const_get(class_name)
+          rescue
+            require f
+            model = Module.const_get(class_name) 
+          end
+          
           next unless model
           next unless model.ancestors.include?(CouchbaseModel)
           models << model
