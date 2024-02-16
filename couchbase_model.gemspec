@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'couchbase_model'
-  s.version     = '0.1.4'
+  s.version     = '0.1.5'
   s.date        = '2017-06-28'
   s.summary     = "Couchbase + Elasticsearch"
   s.description = ""
